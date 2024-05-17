@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f9ff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            color: #333;
+        }
+        header, footer {
+            width: 100%;
+            background-color: #005792;
+            color: #fff;
+            padding: 15px 20px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .container {
+            width: 95%;
+            max-width: 1100px;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+            margin-top: 25px;
+            text-align: center;
+        }
+        .section {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #e1e1e1;
+            border-radius: 8px;
+        }
+        .dropzone {
+            border: 2px dashed #0077b6;
+            border-radius: 8px;
+            background: white;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+        }
+        .dropzone:hover {
+            background-color: #e8f0fe;
+            border-color: #0077b6;
+        }
+        .table-container {
+            max-height: 300px;
+            overflow-y: scroll;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+        th {
+            background-color: #0077b6;
+            color: white;
+        }
+        .nav-button {
+            background-color: #0088a9;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .nav-button:hover {
+            background-color: #00aabd;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1 class="nav-title">Load Forecasting For Electricity</h1>
+    </header>
+    <div class="container">
+        <h1>Model Performance Dashboard</h1>
+        <div class="section">
+            <h2>Upload Training Data</h2>
+            <form action="/upload_training" class="dropzone" id="training-dropzone" method="post" enctype="multipart/form-data">
+                <input name="file" type="file" accept=".txt" multiple />
+                <input type="submit" value="Upload File" style="margin-top: 10px; padding: 8px 16px; border-radius: 4px; border: none; background: #0077b6; color: white; cursor: pointer;">
+            </form>
+        </div>
+        <div class="section">
+            <h2>Upload Prediction Data</h2>
+            <form action="/upload_prediction" class="dropzone" id="prediction-dropzone" method="post" enctype="multipart/form-data">
+                <input name="file" type="file" accept=".txt" multiple />
+                <input type="submit" value="Upload File" style="margin-top: 10px; padding: 8px 16px; border-radius: 4px; border: none; background: #0077b6; color: white; cursor: pointer;">
+            </form>
+        </div>
+        <button class="nav-button" id="run-forecast-button">Run Forecast</button>
+        <div class="section">
+            <h2>Prediction Results</h2>
+            <div class="table-container">
+                <table id="prediction-table" class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Original Data</th>
+                            <th>Prediction</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Prediction rows will be dynamically inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <footer>
+        <p>© 2024 Team MCS23 - Monash University Malaysia. All rights reserved.</p>
+    </footer>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.js"></script>
+    <script>
+        document.getElementById('training-dropzone').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            fetch('/upload_training', {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => { throw new Error(text) });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (!data.success) {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error: ' + error.message);
+            });
+        });
+
+        document.getElementById('prediction-dropzone').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            fetch('/upload_prediction', {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => { throw new Error(text) });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    const filename = data.filename;
+                    document.getElementById('run-forecast-button').dataset.filename = filename;
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error: ' + error.message);
+            });
+        });
+
+        document.getElementById('run-forecast-button').addEventListener('click', function(e) {
+            e.preventDefault();
+            const filename = this.dataset.filename;
+            fetch(`/run_forecast?file=${filename}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const tbody = document.getElementById('prediction-table').getElementsByTagName('tbody')[0];
+                    tbody.innerHTML = ''; // Clear previous rows
+                    const rows = data.predictions; // Parse JSON string into objects
+                    rows.forEach(row => {
+                        let tr = document.createElement('tr');
+                        let originalData = Object.values(row).slice(0, -1).join(', '); // Assuming last column is prediction
+                        let prediction = row.Prediction;
+                        let tdOriginal = document.createElement('td');
+                        tdOriginal.textContent = originalData;
+                        let tdPrediction = document.createElement('td');
+                        tdPrediction.textContent = prediction;
+                        tr.appendChild(tdOriginal);
+                        tr.appendChild(tdPrediction);
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error: ' + error.message);
+            });
+        });
+    </script>
+</body>
+</html>

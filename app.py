@@ -1,60 +1,91 @@
-from flask import Flask, send_from_directory, render_template
+import os
+import importlib.util
+from flask import Flask, request, render_template, jsonify
+from werkzeug.utils import secure_filename
+import torch
 
 app = Flask(__name__)
+app.config['TRAINING_UPLOAD_FOLDER'] = '/Users/muhammadabdullahakif/Documents/GitHub/Electricity-Load-Prediction/training_dataset'
+app.config['PREDICTION_UPLOAD_FOLDER'] = '/Users/muhammadabdullahakif/Documents/GitHub/Electricity-Load-Prediction/prediction_dataset'
+app.config['MODEL_PATH'] = '/Users/muhammadabdullahakif/Documents/GitHub/Electricity-Load-Prediction/model/model_state_dict.pt'
+app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024 * 1024  # 2GB
+
+# Store file paths for training and prediction datasets
+training_file_path = None
+prediction_file_path = None
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() == 'txt'
 
 @app.route('/')
 def index():
-    return send_from_directory('static', 'index.html')
+    return render_template('index.html')
 
-@app.route('/upload_page')
-def upload_page():
-    return send_from_directory('static', 'upload_forecast.html')  # Make sure this file is in the static directory
+@app.route('/upload_training', methods=['POST'])
+def upload_training_file():
+    return handle_file_upload('training')
+
+@app.route('/upload_prediction', methods=['POST'])
+def upload_prediction_file():
+    return handle_file_upload('prediction')
+
+def handle_file_upload(upload_type):
+    global training_file_path, prediction_file_path
+
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        if upload_type == 'training':
+            folder = app.config['TRAINING_UPLOAD_FOLDER']
+            training_file_path = os.path.join(folder, filename)
+        else:
+            folder = app.config['PREDICTION_UPLOAD_FOLDER']
+            prediction_file_path = os.path.join(folder, filename)
+        file_path = os.path.join(folder, filename)
+        file.save(file_path)
+        return jsonify({"success": True, "filename": filename}), 200
+    return jsonify({"error": "File type not allowed"}), 400
+
+@app.route('/run_forecast', methods=['GET'])
+def run_forecast():
+    global training_file_path, prediction_file_path
+
+    if not training_file_path or not prediction_file_path:
+        return jsonify({"error": "Both training and prediction datasets must be uploaded"}), 400
+    
+    try:
+        # Train the model
+        train_model(training_file_path)
+        # Run the model for prediction
+        predictions = predict_model(prediction_file_path)
+        return jsonify({"success": True, "predictions": predictions}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+def train_model(training_file_path):
+    spec = importlib.util.spec_from_file_location("LSTM_train_eva", "/Users/muhammadabdullahakif/Documents/GitHub/Electricity-Load-Prediction/model/LSTM_train_eva.py")
+    lstm_train_eva = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(lstm_train_eva)
+    lstm_train_eva.main(training_file_path)
+
+def predict_model(prediction_file_path):
+    spec = importlib.util.spec_from_file_location("LSTM_train_eva", "/Users/muhammadabdullahakif/Documents/GitHub/Electricity-Load-Prediction/model/LSTM_train_eva.py")
+    lstm_train_eva = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(lstm_train_eva)
+    predictions = lstm_train_eva.predict(prediction_file_path)
+    return predictions
+
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({"error": "Internal server error: " + str(error)}), 500
+
+@app.errorhandler(404)
+def not_found_error(error):
+    return jsonify({"error": "Not found: " + str(error)}), 404
 
 if __name__ == '__main__':
     app.run(debug=True)
-
-
-# from flask import Flask, request, jsonify, send_from_directory
-# import os
-# from werkzeug.utils import secure_filename
-# from lstm import process_file  # Ensure lstm.py contains the appropriate functions
-
-# app = Flask(__name__)
-# app.config['UPLOAD_FOLDER'] = 'uploads'  # Folder to store uploaded files
-# app.config['MAX_CONTENT_LENGTH'] = 800 * 1024 * 1024  # Max upload - 800MB
-# app.config['ALLOWED_EXTENSIONS'] = {'txt', 'csv'}
-
-# def allowed_file(filename):
-#     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
-
-# @app.route('/')
-# def index():
-#     return send_from_directory('static', 'index.html')
-
-# @app.route('/upload_page')
-# def upload_page():
-#     return send_from_directory('static', 'upload_forecast.html')  # Ensure this file is in the static directory
-
-# @app.route('/upload', methods=['POST'])
-# def upload_file():
-#     if 'file' not in request.files:
-#         return jsonify({'error': 'No file part'}), 400
-#     file = request.files['file']
-#     if file.filename == '':
-#         return jsonify({'error': 'No selected file'}), 400
-#     if file and allowed_file(file.filename):
-#         filename = secure_filename(file.filename)
-#         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-#         file.save(filepath)
-#         try:
-#             results = process_file(filepath)  # Use the new function
-#             return jsonify({'results': results})
-#         except Exception as e:
-#             return jsonify({'error': str(e)}), 500
-#     return jsonify({'error': 'File type not allowed'}), 400
-
-# if __name__ == '__main__':
-#     if not os.path.exists(app.config['UPLOAD_FOLDER']):
-#         os.makedirs(app.config['UPLOAD_FOLDER'])
-
-#     app.run(debug=True)
