@@ -741,7 +741,7 @@ def train_and_evaluate(model, data, args, train_func, evaluate_func, optim):
 
             if val_loss.item() < best_val:
               with open(args.save, 'wb') as f:
-                torch.save(model.state_dict(), f)
+                torch.save(model, f)
               best_val = val_loss.item()
           #torch.device('cuda:0') for the first GPU or torch.device('cpu') for the CPU1.
           #then .to(device) would go to either CPU or GPU
@@ -751,7 +751,7 @@ def train_and_evaluate(model, data, args, train_func, evaluate_func, optim):
           print(f"Validation: Epoch {epoch}, Loss: {val_loss.item()}")
           if val_loss.item() < best_val:
             with open(args.save, 'wb') as f:
-              torch.save(model.state_dict(), f)
+              torch.save(model, f)
             best_val = val_loss.item()
         # if epoch % 5 == 0:
         #   #torch.device('cuda:0') for the first GPU or torch.device('cpu') for the CPU1.
@@ -776,7 +776,7 @@ train_and_evaluate(model, Data, args, train, evaluate, optim)
 # In[37]:
 
 
-def model_pred(data,X,Y, model):
+def model_pred(data,X,Y):
   try:
     for x, y in data.get_batches(X,Y, args.batch_size, True):
       with torch.no_grad():
@@ -808,20 +808,20 @@ def model_pred(data,X,Y, model):
 
 # Load the best saved model.
 #output = None
-# with open(args.save, 'rb') as f:
-#   model = torch.load(f)
-#   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-#   X = Data.test[0].to(device)
-#   Y = Data.test[1].to(device)
+with open(args.save, 'rb') as f:
+  model = torch.load(f)
+  device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+  X = Data.test[0].to(device)
+  Y = Data.test[1].to(device)
 
-#   hidden_state, output = model_pred(Data,X,Y)
-#   output = output.cpu()
-#   output = output.numpy()
-#   print(output)
+  hidden_state, output = model_pred(Data,X,Y)
+  output = output.cpu()
+  output = output.numpy()
+  print(output)
 
-#   for i in range(len(output)):
-#     for j in range(len(output[0])):
-#       print(output[0][j])
+  for i in range(len(output)):
+    for j in range(len(output[0])):
+      print(output[0][j])
 
 
 # In[ ]:
@@ -870,7 +870,7 @@ def predict(prediction_file_path):
     args.CNN_kernel = 6
     args.skip = 24
     args.gpu = 1
-    args.cuda = torch.cuda.is_available()
+    args.cuda = True
     args.highway_window = 24
     args.dropout = 0.2
     args.output_fun = 'sigmoid'
@@ -882,22 +882,20 @@ def predict(prediction_file_path):
     args.lr = 0.01
     args.clip = 10
     args.epochs = 2
-    args.save = '/Users/muhammadabdullahakif/Documents/GitHub/Electricity-Load-Prediction/model/model_state_dict.pt'
+    args.save = '/Users/muhammadabdullahakif/Documents/GitHub/Electricity-Load-Prediction/model/model.pt'
     args.horizon = 24
 
     data = Data_util(args.data, 0.6, 0.2, args.cuda, args.horizon, args.window, 2)
-    model = LSTM(len(data.rawdat[0]))
-    model.load_state_dict(torch.load(args.save))
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model.to(device)
-    X = data.test[0].to(device)
-    Y = data.test[1].to(device)
-    hidden_state, output = model_pred(data, X, Y, model)
-    if hidden_state is None or output is None:
-        print("Error in model_pred, returned None")
-        return []
-    output = output.cpu().numpy()
-    return output
+    
+    with open(args.save, 'rb') as f:
+        model = torch.load(f)
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model.to(device)
+        X = data.test[0].to(device)
+        Y = data.test[1].to(device)
+        hidden_state, output = model_pred(data, X, Y)
+        output = output.cpu().numpy()
+        return output
 
 if __name__ == "__main__":
     import sys

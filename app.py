@@ -59,10 +59,10 @@ def run_forecast():
     
     try:
         # Train the model
-        train_model(training_file_path)
+        train = train_model(training_file_path)
         # Run the model for prediction
-        predictions = predict_model(prediction_file_path)
-        return jsonify({"success": True, "predictions": predictions}), 200
+        # predictions = predict_model(prediction_file_path)
+        return jsonify({"success": True, "training": train}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
