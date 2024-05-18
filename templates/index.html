@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Model Dashboard</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.css" rel="stylesheet">
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -34,31 +33,28 @@
             box-shadow: 0 6px 12px rgba(0,0,0,0.1);
             margin-top: 25px;
             text-align: center;
+            position: relative;
         }
         .section {
             margin-bottom: 20px;
-            padding: 10px;
+            padding: 20px;
             border: 1px solid #e1e1e1;
             border-radius: 8px;
+            background: #f9fbff;
+            position: relative;
         }
-        .dropzone {
-            border: 2px dashed #0077b6;
-            border-radius: 8px;
-            background: white;
-            padding: 40px;
+        .section h2 {
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            color: #005792;
             text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease-in-out;
-        }
-        .dropzone:hover {
-            background-color: #e8f0fe;
-            border-color: #0077b6;
         }
         .table-container {
             max-height: 300px;
             overflow-y: scroll;
             border: 1px solid #ccc;
             border-radius: 5px;
+            margin-top: 15px;
         }
         table {
             width: 100%;
@@ -66,7 +62,7 @@
         }
         th, td {
             border: 1px solid #dddddd;
-            text-align: left;
+            text-align: center;
             padding: 8px;
         }
         th {
@@ -88,6 +84,61 @@
         .nav-button:hover {
             background-color: #00aabd;
         }
+        .file-upload {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+        }
+        .file-upload input[type="file"] {
+            display: none;
+        }
+        .file-upload label {
+            background-color: #0077b6;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        .file-upload label:hover {
+            background-color: #005792;
+        }
+        .file-name {
+            margin-left: 10px;
+            color: #333;
+            font-weight: bold;
+            flex-grow: 1;
+            text-align: left;
+        }
+        .upload-button {
+            margin-left: 10px;
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            background: #0077b6;
+            color: white;
+            cursor: pointer;
+        }
+        .upload-button:hover {
+            background-color: #005792;
+        }
+        .icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            opacity: 0.1;
+            width: 50px;
+            height: 50px;
+        }
+        .icon.train {
+            background: url('https://cdn-icons-png.flaticon.com/512/2991/2991148.png') no-repeat center center;
+            background-size: contain;
+        }
+        .icon.predict {
+            background: url('https://cdn-icons-png.flaticon.com/512/3199/3199804.png') no-repeat center center;
+            background-size: contain;
+        }
     </style>
 </head>
 <body>
@@ -98,26 +149,36 @@
         <h1>Model Performance Dashboard</h1>
         <div class="section">
             <h2>Upload Training Data</h2>
-            <form action="/upload_training" class="dropzone" id="training-dropzone" method="post" enctype="multipart/form-data">
-                <input name="file" type="file" accept=".txt" multiple />
-                <input type="submit" value="Upload File" style="margin-top: 10px; padding: 8px 16px; border-radius: 4px; border: none; background: #0077b6; color: white; cursor: pointer;">
+            <div class="icon train"></div>
+            <form id="training-form" method="post" enctype="multipart/form-data">
+                <div class="file-upload">
+                    <label for="training-file">Choose File</label>
+                    <input id="training-file" name="file" type="file" accept=".txt" required />
+                    <span id="training-file-name" class="file-name"></span>
+                    <input type="submit" value="Upload File" class="upload-button">
+                </div>
             </form>
         </div>
         <div class="section">
             <h2>Upload Prediction Data</h2>
-            <form action="/upload_prediction" class="dropzone" id="prediction-dropzone" method="post" enctype="multipart/form-data">
-                <input name="file" type="file" accept=".txt" multiple />
-                <input type="submit" value="Upload File" style="margin-top: 10px; padding: 8px 16px; border-radius: 4px; border: none; background: #0077b6; color: white; cursor: pointer;">
+            <div class="icon predict"></div>
+            <form id="prediction-form" method="post" enctype="multipart/form-data">
+                <div class="file-upload">
+                    <label for="prediction-file">Choose File</label>
+                    <input id="prediction-file" name="file" type="file" accept=".txt" required />
+                    <span id="prediction-file-name" class="file-name"></span>
+                    <input type="submit" value="Upload File" class="upload-button">
+                </div>
             </form>
         </div>
-        <button class="nav-button" id="run-forecast-button">Run Forecast</button>
+        <button class="nav-button" id="run-forecast-button" style="margin-bottom: 20px;">Run Forecast</button>
         <div class="section">
             <h2>Prediction Results</h2>
             <div class="table-container">
                 <table id="prediction-table" class="table table-striped">
                     <thead>
                         <tr>
-                            <th>Original Data</th>
+                            <th>Training</th>
                             <th>Prediction</th>
                         </tr>
                     </thead>
@@ -131,9 +192,18 @@
     <footer>
         <p>© 2024 Team MCS23 - Monash University Malaysia. All rights reserved.</p>
     </footer>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.js"></script>
     <script>
-        document.getElementById('training-dropzone').addEventListener('submit', function(e) {
+        document.getElementById('training-file').addEventListener('change', function() {
+            const fileName = this.files[0] ? this.files[0].name : 'No file chosen';
+            document.getElementById('training-file-name').textContent = fileName;
+        });
+
+        document.getElementById('prediction-file').addEventListener('change', function() {
+            const fileName = this.files[0] ? this.files[0].name : 'No file chosen';
+            document.getElementById('prediction-file-name').textContent = fileName;
+        });
+
+        document.getElementById('training-form').addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);
             fetch('/upload_training', {
@@ -157,7 +227,7 @@
             });
         });
 
-        document.getElementById('prediction-dropzone').addEventListener('submit', function(e) {
+        document.getElementById('prediction-form').addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);
             fetch('/upload_prediction', {
