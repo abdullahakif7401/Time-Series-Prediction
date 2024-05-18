@@ -1,47 +1,46 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[17]:
+# In[40]:
 
 
 # from google.colab import drive
 # drive.mount('/content/drive')
 
 
-# In[18]:
+# In[41]:
 
 
 # import os
 # os.chdir('/content/drive/MyDrive/FIT3162')
 
 
-# In[19]:
+# In[42]:
 
 
 # ls
 
 
-# In[20]:
+# In[43]:
 
 
 #Try on Proshphet model from facebook to train and predict
 
 
-# In[21]:
+# In[44]:
 
 
-import os
 import matplotlib.pyplot as plt
 import numpy as np
 
 
-# In[22]:
+# In[45]:
 
 
 #pip install pyts
 
 
-# In[23]:
+# In[46]:
 
 
 # pip install torch numpy pandas scikit-learn mlxtend pyts
@@ -49,7 +48,7 @@ import numpy as np
 
 # 
 
-# In[24]:
+# In[47]:
 
 
 #Preprocess the dataset
@@ -229,21 +228,16 @@ class Data_util(object):
 
 
 
-# In[25]:
+# In[48]:
 
-def check_file_in_folder(folder_path):
-    for file in os.listdir(folder_path):
-        if file.endswith(".txt"):
-            return file
-    return False
+
 #python main.py --gpu 3 --horizon 24 --data data/electricity.txt --save save/elec.pt --output_fun Linear
 #args = parser.parse_args()
 #Data = Data_util(args.data, 0.6, 0.2, args.cuda, args.horizon, args.window, args.normalise);
-data_file_path = check_file_in_folder('training_dataset/')
-Data = Data_util('training_dataset/' + data_file_path, 0.6, 0.2, False, 12, 24 * 7, 2);
+Data = Data_util('/Users/muhammadabdullahakif/Documents/GitHub/Electricity-Load-Prediction/data/electricity.txt', 0.6, 0.2, False, 12, 24 * 7, 2);
 
 
-# In[26]:
+# In[49]:
 
 
 def evaluate(data, X, Y, model, evaluateL2, evaluateL1, batch_size):
@@ -317,7 +311,7 @@ def evaluate(data, X, Y, model, evaluateL2, evaluateL1, batch_size):
   return rse, rae, correlation
 
 
-# In[31]:
+# In[50]:
 
 
 import argparse
@@ -329,7 +323,7 @@ parser = argparse.ArgumentParser(description='Pytorch Time series forecasting')
 
 #only parse known arguments, and store unknown arguments in the unknown variable
 args, unknown = parser.parse_known_args()
-args.data = 'training_dataset/*.csv'
+args.data = 'data/electricity.txt'
 args.window = 24 * 7
 args.hidRNN = 100
 args.hidCNN = 100
@@ -353,7 +347,7 @@ args.save = 'model/model.pt' #pt: performace track
 args.horizon = 24
 
 
-# In[32]:
+# In[51]:
 
 
 import torch
@@ -497,7 +491,7 @@ class LSTM(nn.Module):
 
 
 
-# In[33]:
+# In[52]:
 
 
 #Train
@@ -550,7 +544,7 @@ def train(data, X, Y, model, criterion, optim, batch_size):
   return total_loss/n_samples
 
 
-# In[34]:
+# In[53]:
 
 
 import torch
@@ -641,13 +635,13 @@ class Optim(object):
 
 #LSTM
 model = LSTM((len(Data.rawdat[0])))
-optim = Optim(
-    model.parameters(), args.optim, args.lr, args.clip,
-)
+# optim = Optim(
+#     model.parameters(), args.optim, args.lr, args.clip,
+# )
 
 
 
-def train_and_evaluate(model, data, args, train_func, evaluate_func, optim):
+def train_and_evaluate(model, data, args, train_func, evaluate_func):
   best_val = 10000000;
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
   model.to(device)
@@ -776,10 +770,10 @@ def train_and_evaluate(model, data, args, train_func, evaluate_func, optim):
   # print ("test rse {:5.4f} | test rae {:5.4f} | test corr {:5.4f}".format(test_acc, test_rae, test_corr))
 
 
-train_and_evaluate(model, Data, args, train, evaluate, optim)
+# train_and_evaluate(model, Data, args, train, evaluate)
 
 
-# In[37]:
+# In[57]:
 
 
 def model_pred(data,X,Y):
@@ -807,37 +801,15 @@ def model_pred(data,X,Y):
   except Exception as ex:
     print(ex)
 
+#!/usr/bin/env python
+# coding: utf-8
 
+# (Rest of your existing code...)
 
-# In[38]:
-
-
-# Load the best saved model.
-#output = None
-with open(args.save, 'rb') as f:
-  model = torch.load(f)
-  device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-  X = Data.test[0].to(device)
-  Y = Data.test[1].to(device)
-
-  hidden_state, output = model_pred(Data,X,Y)
-  output = output.cpu()
-  output = output.numpy()
-  print(output)
-
-  for i in range(len(output)):
-    for j in range(len(output[0])):
-      print(output[0][j])
-
-
-# In[ ]:
-
-
-
-def main(training_file_path):
-    parser = argparse.ArgumentParser(description='Pytorch Time series forecasting')
-    args, unknown = parser.parse_known_args()
-    args.data = training_file_path
+def main(file_path):
+    # Initialize and configure the arguments
+    args = argparse.Namespace()
+    args.data = file_path
     args.window = 24 * 7
     args.hidRNN = 100
     args.hidCNN = 100
@@ -845,38 +817,7 @@ def main(training_file_path):
     args.CNN_kernel = 6
     args.skip = 24
     args.gpu = 1
-    args.cuda = True
-    args.highway_window = 24
-    args.dropout = 0.2
-    args.output_fun = 'sigmoid'
-    args.model = 'LSTNet'
-    args.batch_size = 128
-    args.seed = 54321
-    args.L1Loss = True
-    args.optim = 'adam'
-    args.lr = 0.01
-    args.clip = 10
-    args.epochs = 2
-    args.save = 'model/model.pt'
-    args.horizon = 24
-    
-    data = Data_util(args.data, 0.6, 0.2, args.cuda, args.horizon, args.window, 2)
-    model = LSTM((len(data.rawdat[0])))
-    optim = Optim(model.parameters(), args.optim, args.lr, args.clip)
-    train_and_evaluate(model, data, args, train, evaluate, optim)
-
-def predict(prediction_file_path):
-    parser = argparse.ArgumentParser(description='Pytorch Time series forecasting')
-    args, unknown = parser.parse_known_args()
-    args.data = prediction_file_path
-    args.window = 24 * 7
-    args.hidRNN = 100
-    args.hidCNN = 100
-    args.hidSkip = 5
-    args.CNN_kernel = 6
-    args.skip = 24
-    args.gpu = 1
-    args.cuda = True
+    args.cuda = False  # Set to True if you want to use GPU
     args.highway_window = 24
     args.dropout = 0.2
     args.output_fun = 'sigmoid'
@@ -891,21 +832,45 @@ def predict(prediction_file_path):
     args.save = 'model/model.pt'
     args.horizon = 24
 
-    data = Data_util(args.data, 0.6, 0.2, args.cuda, args.horizon, args.window, 2)
-    
-    with open(args.save, 'rb') as f:
-        model = torch.load(f)
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        model.to(device)
-        X = data.test[0].to(device)
-        Y = data.test[1].to(device)
-        hidden_state, output = model_pred(data, X, Y)
-        output = output.cpu().numpy()
-        return output
+    Data = Data_util(args.data, 0.6, 0.2, args.cuda, args.horizon, args.window, 2)
+
+    model = LSTM((len(Data.rawdat[0])))
+    # optim = Optim(model.parameters(), args.optim, args.lr, args.clip)
+
+    train_and_evaluate(model, Data, args, train, evaluate)
+
+    # # Predict using the trained model
+    # with open(args.save, 'rb') as f:
+    #     model = torch.load(f)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    X = Data.test[0].to(device)
+    Y = Data.test[1].to(device)
+
+    hidden_state, output = model_pred(Data, X, Y)
+    output = output.cpu().numpy()
+
+    return output
 
 if __name__ == "__main__":
     import sys
-    if sys.argv[1] == "train":
-        main(sys.argv[2])
-    elif sys.argv[1] == "predict":
-        print(predict(sys.argv[2]))
+    main(sys.argv[1])
+
+# # In[58]:
+
+
+# # Load the best saved model.
+# #output = None
+# with open(args.save, 'rb') as f:
+#   model = torch.load(f)
+#   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#   X = Data.test[0].to(device)
+#   Y = Data.test[1].to(device)
+
+#   hidden_state, output = model_pred(Data,X,Y)
+#   output = output.cpu()
+#   output = output.numpy()
+#   print(output)
+
+#   for i in range(len(output)):
+#     for j in range(len(output[0])):
+#       print(output[0][j])

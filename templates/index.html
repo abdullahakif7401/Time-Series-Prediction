@@ -33,28 +33,18 @@
             box-shadow: 0 6px 12px rgba(0,0,0,0.1);
             margin-top: 25px;
             text-align: center;
-            position: relative;
         }
         .section {
             margin-bottom: 20px;
-            padding: 20px;
+            padding: 10px;
             border: 1px solid #e1e1e1;
             border-radius: 8px;
-            background: #f9fbff;
-            position: relative;
-        }
-        .section h2 {
-            margin-bottom: 15px;
-            font-size: 1.5em;
-            color: #005792;
-            text-align: center;
         }
         .table-container {
             max-height: 300px;
             overflow-y: scroll;
             border: 1px solid #ccc;
             border-radius: 5px;
-            margin-top: 15px;
         }
         table {
             width: 100%;
@@ -62,7 +52,7 @@
         }
         th, td {
             border: 1px solid #dddddd;
-            text-align: center;
+            text-align: left;
             padding: 8px;
         }
         th {
@@ -73,24 +63,21 @@
             background-color: #0088a9;
             color: white;
             border: none;
-            padding: 15px 30px;
-            border-radius: 50px;
+            padding: 10px 20px;
+            border-radius: 5px;
             text-decoration: none;
             display: inline-block;
             margin-top: 20px;
             cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.3s ease;
-            font-size: 1.2em;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease;
         }
         .nav-button:hover {
             background-color: #00aabd;
-            transform: scale(1.05);
         }
         .file-upload {
-            margin-top: 10px;
             display: flex;
             align-items: center;
+            margin-top: 10px;
         }
         .file-upload input[type="file"] {
             display: none;
@@ -101,46 +88,13 @@
             padding: 8px 16px;
             border-radius: 4px;
             cursor: pointer;
-            display: inline-block;
             margin-right: 10px;
         }
         .file-upload label:hover {
             background-color: #005792;
         }
-        .file-name {
-            margin-left: 10px;
-            color: #333;
-            font-weight: bold;
-            flex-grow: 1;
-            text-align: left;
-        }
-        .upload-button {
-            margin-left: 10px;
-            padding: 8px 16px;
-            border-radius: 4px;
-            border: none;
-            background: #0077b6;
-            color: white;
-            cursor: pointer;
-        }
-        .upload-button:hover {
-            background-color: #005792;
-        }
-        .icon {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            opacity: 0.1;
-            width: 50px;
-            height: 50px;
-        }
-        .icon.train {
-            background: url('https://cdn-icons-png.flaticon.com/512/2991/2991148.png') no-repeat center center;
-            background-size: contain;
-        }
-        .icon.predict {
-            background: url('https://cdn-icons-png.flaticon.com/512/3199/3199804.png') no-repeat center center;
-            background-size: contain;
+        .chosen-file {
+            font-style: italic;
         }
     </style>
 </head>
@@ -151,40 +105,24 @@
     <div class="container">
         <h1>Model Performance Dashboard</h1>
         <div class="section">
-            <h2>Upload Training Data</h2>
-            <div class="icon train"></div>
-            <form id="training-form" method="post" enctype="multipart/form-data">
+            <h2>Upload Dataset</h2>
+            <form id="dataset-form" method="post" enctype="multipart/form-data">
                 <div class="file-upload">
-                    <label for="training-file">Choose File</label>
-                    <input id="training-file" name="file" type="file" accept=".txt" required />
-                    <span id="training-file-name" class="file-name"></span>
-                    <input type="submit" value="Upload File" class="upload-button">
+                    <input id="dataset-file" name="file" type="file" accept=".txt" />
+                    <label for="dataset-file">Choose File</label>
+                    <input type="submit" value="Upload File" style="margin-top: 10px; padding: 8px 16px; border-radius: 4px; border: none; background: #0077b6; color: white; cursor: pointer;">
                 </div>
+                <span id="chosen-dataset-file" class="chosen-file">No file chosen</span>
             </form>
         </div>
-        <div class="section">
-            <h2>Upload Prediction Data</h2>
-            <div class="icon predict"></div>
-            <form id="prediction-form" method="post" enctype="multipart/form-data">
-                <div class="file-upload">
-                    <label for="prediction-file">Choose File</label>
-                    <input id="prediction-file" name="file" type="file" accept=".txt" required />
-                    <span id="prediction-file-name" class="file-name"></span>
-                    <input type="submit" value="Upload File" class="upload-button">
-                </div>
-            </form>
-        </div>
-        <div class="section">
-            <h2>Run Forecast</h2>
-            <button class="nav-button" id="run-forecast-button">Run Forecast</button>
-        </div>
+        <button class="nav-button" id="run-forecast-button">Run Forecast</button>
         <div class="section">
             <h2>Prediction Results</h2>
             <div class="table-container">
                 <table id="prediction-table" class="table table-striped">
                     <thead>
                         <tr>
-                            <th>Training</th>
+                            <th>Original Data</th>
                             <th>Prediction</th>
                         </tr>
                     </thead>
@@ -199,96 +137,49 @@
         <p>© 2024 Team MCS23 - Monash University Malaysia. All rights reserved.</p>
     </footer>
     <script>
-        document.getElementById('training-file').addEventListener('change', function() {
+        document.getElementById('dataset-file').addEventListener('change', function() {
             const fileName = this.files[0] ? this.files[0].name : 'No file chosen';
-            document.getElementById('training-file-name').textContent = fileName;
+            document.getElementById('chosen-dataset-file').textContent = fileName;
         });
 
-        document.getElementById('prediction-file').addEventListener('change', function() {
-            const fileName = this.files[0] ? this.files[0].name : 'No file chosen';
-            document.getElementById('prediction-file-name').textContent = fileName;
-        });
-
-        document.getElementById('training-form').addEventListener('submit', function(e) {
+        document.getElementById('dataset-form').addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);
-            fetch('/upload_training', {
+            fetch('/upload_dataset', {
                 method: 'POST',
                 body: formData,
             })
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => { throw new Error(text) });
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (!data.success) {
-                    alert('Error: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error: ' + error.message);
-            });
-        });
-
-        document.getElementById('prediction-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            fetch('/upload_prediction', {
-                method: 'POST',
-                body: formData,
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => { throw new Error(text) });
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    const filename = data.filename;
-                    document.getElementById('run-forecast-button').dataset.filename = filename;
-                } else {
-                    alert('Error: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error: ' + error.message);
-            });
-        });
-
-        document.getElementById('run-forecast-button').addEventListener('click', function(e) {
-            e.preventDefault();
-            const filename = this.dataset.filename;
-            fetch(`/run_forecast?file=${filename}`)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    const tbody = document.getElementById('prediction-table').getElementsByTagName('tbody')[0];
-                    tbody.innerHTML = ''; // Clear previous rows
-                    const rows = data.predictions; // Parse JSON string into objects
-                    rows.forEach(row => {
-                        let tr = document.createElement('tr');
-                        let originalData = Object.values(row).slice(0, -1).join(', '); // Assuming last column is prediction
-                        let prediction = row.Prediction;
-                        let tdOriginal = document.createElement('td');
-                        tdOriginal.textContent = originalData;
-                        let tdPrediction = document.createElement('td');
-                        tdPrediction.textContent = prediction;
-                        tr.appendChild(tdOriginal);
-                        tr.appendChild(tdPrediction);
-                        tbody.appendChild(tr);
-                    });
+                    alert('File uploaded successfully.');
                 } else {
-                    alert('Error: ' + data.error);
+                    alert('File upload failed: ' + (data.error || 'Unknown error.'));
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                alert('Error: ' + error.message);
+                alert('File upload error: ' + error.message);
+            });
+        });
+
+        document.getElementById('run-forecast-button').addEventListener('click', function() {
+            fetch('/run_forecast')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const tbody = document.querySelector('#prediction-table tbody');
+                    tbody.innerHTML = '';
+                    data.predictions.forEach(prediction => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `<td>${prediction.original_data}</td><td>${prediction.prediction}</td>`;
+                        tbody.appendChild(row);
+                    });
+                } else {
+                    alert('Forecast failed: ' + (data.error || 'Unknown error.'));
+                }
+            })
+            .catch(error => {
+                alert('Forecast error: ' + error.message);
             });
         });
     </script>
