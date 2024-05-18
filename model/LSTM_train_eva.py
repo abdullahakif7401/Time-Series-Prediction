@@ -87,6 +87,7 @@ class Data_util(object):
     #load txt file to be file object
     #separate dat by ,
     self.rawdat = np.loadtxt(data,delimiter=',')
+    data.close()
     # perform arm on data
     self._arm(5, 0.7, 0.7, 50)
     self.dat = np.zeros(self.rawdat.shape)
@@ -123,14 +124,17 @@ class Data_util(object):
     sax_df = pd.DataFrame(sax.fit_transform(norm_data))
     binary_sax_df = pd.get_dummies(sax_df)
     frequent_itemsets = apriori(binary_sax_df, min_support=min_support, use_colnames=True)
+    if len(frequent_itemsets) == 0:
+        self.cols = list(range(df.shape[1]))
+        return
     rules = association_rules(frequent_itemsets, metric='confidence', min_threshold=min_threshold)
     rules = rules.sort_values(by=['zhangs_metric'], ascending=False).iloc[:n_rules, :]
     unique_items = set()
     for index, row in rules.iterrows():
         unique_items.update([int(item[:-2]) for item in row['antecedents']])
         unique_items.update([int(item[:-2]) for item in row['consequents']])
-    unique_items = list(unique_items)
-    df = df.iloc[:, unique_items]
+    self.cols = list(unique_items)
+    df = df.iloc[:, self.cols]
     self.rawdat = df.values
 
   def _normalised(self, normalise):
@@ -774,6 +778,42 @@ def train_and_evaluate(model, data, args, train_func, evaluate_func):
 
 
 # In[57]:
+class PredData_util:
+    def __init__(self, file_name, ntp, re, cols, normalise=2):
+        self.re = re
+        self.ntp = ntp
+        data = open(file_name)
+        self.rawdat = pd.DataFrame(np.loadtxt(data, delimiter=',')).iloc[:, cols].values
+        data.close()
+        self.dat = np.zeros(self.rawdat.shape)
+        self.n, self.m = self.dat.shape
+        self.scale = np.ones(self.m)
+        self._normalised(normalise)
+        self._batchify(range(self.re + self.ntp - 1, self.n))
+
+    def _normalised(self, normalise):
+        if normalise == 0:
+            self.dat = self.rawdat
+        elif normalise == 1:
+            self.dat = self.rawdat / np.max(self.rawdat)
+        elif normalise == 2:
+            for i in range(self.m):
+                self.scale[i] = np.max(np.abs(self.rawdat[:, 1]))
+                self.dat[:, i] = self.rawdat[:, i] / np.max(np.abs(self.rawdat[:, i]))
+
+    def _batchify(self, idx_set):
+        n = len(idx_set)
+        X = torch.zeros((n, self.re, self.m))
+        Y = torch.zeros((n, self.m))
+
+        for i in range(n):
+            end = idx_set[i] - self.ntp + 1
+            start = end - self.re
+            X[i, :, :] = torch.from_numpy(self.dat[start:end, :])
+            Y[i, :] = torch.from_numpy(self.dat[idx_set[i], :])
+
+        self.x = X
+        self.y = Y
 
 
 def model_pred(data,X,Y):
@@ -842,14 +882,16 @@ def main(file_path):
     # # Predict using the trained model
     # with open(args.save, 'rb') as f:
     #     model = torch.load(f)
+    PredData = PredData_util(args.pred_data, Data.ntp, Data.re, Data.cols, Data.normalise)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    X = Data.test[0].to(device)
-    Y = Data.test[1].to(device)
+    X = PredData.x.to(device)
+    Y = PredData.y.to(device)
 
     hidden_state, output = model_pred(Data, X, Y)
     output = output.cpu().numpy()
 
     return output
+
 
 if __name__ == "__main__":
     import sys
