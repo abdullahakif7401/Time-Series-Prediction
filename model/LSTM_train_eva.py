@@ -234,7 +234,7 @@ class Data_util(object):
 #python main.py --gpu 3 --horizon 24 --data data/electricity.txt --save save/elec.pt --output_fun Linear
 #args = parser.parse_args()
 #Data = Data_util(args.data, 0.6, 0.2, args.cuda, args.horizon, args.window, args.normalise);
-Data = Data_util('/Users/muhammadabdullahakif/Documents/GitHub/Electricity-Load-Prediction/data/electricity.txt', 0.6, 0.2, False, 12, 24 * 7, 2);
+Data = Data_util('training_dataset/*.txt', 0.6, 0.2, False, 12, 24 * 7, 2);
 
 
 # In[26]:
@@ -323,7 +323,7 @@ parser = argparse.ArgumentParser(description='Pytorch Time series forecasting')
 
 #only parse known arguments, and store unknown arguments in the unknown variable
 args, unknown = parser.parse_known_args()
-args.data = 'data/electricity.txt'
+args.data = 'training_dataset/*.csv'
 args.window = 24 * 7
 args.hidRNN = 100
 args.hidCNN = 100
@@ -343,7 +343,7 @@ args.optim = 'adam'
 args.lr = 0.01
 args.clip = 10
 args.epochs = 2
-args.save = '/Users/muhammadabdullahakif/Documents/GitHub/Electricity-Load-Prediction/model/model.pt' #pt: performace track
+args.save = 'model/model.pt' #pt: performace track
 args.horizon = 24
 
 
@@ -851,7 +851,7 @@ def main(training_file_path):
     args.lr = 0.01
     args.clip = 10
     args.epochs = 2
-    args.save = '/Users/muhammadabdullahakif/Documents/GitHub/Electricity-Load-Prediction/model/model.pt'
+    args.save = 'model/model.pt'
     args.horizon = 24
     
     data = Data_util(args.data, 0.6, 0.2, args.cuda, args.horizon, args.window, 2)
@@ -882,7 +882,7 @@ def predict(prediction_file_path):
     args.lr = 0.01
     args.clip = 10
     args.epochs = 2
-    args.save = '/Users/muhammadabdullahakif/Documents/GitHub/Electricity-Load-Prediction/model/model.pt'
+    args.save = 'model/model.pt'
     args.horizon = 24
 
     data = Data_util(args.data, 0.6, 0.2, args.cuda, args.horizon, args.window, 2)

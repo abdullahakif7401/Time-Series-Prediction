@@ -73,16 +73,19 @@
             background-color: #0088a9;
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 15px 30px;
+            border-radius: 50px;
             text-decoration: none;
             display: inline-block;
             margin-top: 20px;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            font-size: 1.2em;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         .nav-button:hover {
             background-color: #00aabd;
+            transform: scale(1.05);
         }
         .file-upload {
             margin-top: 10px;
@@ -171,7 +174,10 @@
                 </div>
             </form>
         </div>
-        <button class="nav-button" id="run-forecast-button" style="margin-bottom: 20px;">Run Forecast</button>
+        <div class="section">
+            <h2>Run Forecast</h2>
+            <button class="nav-button" id="run-forecast-button">Run Forecast</button>
+        </div>
         <div class="section">
             <h2>Prediction Results</h2>
             <div class="table-container">
