@@ -7,7 +7,7 @@ import torch
 app = Flask(__name__)
 app.config['TRAINING_UPLOAD_FOLDER'] = '/Users/muhammadabdullahakif/Documents/GitHub/Electricity-Load-Prediction/training_dataset'
 app.config['PREDICTION_UPLOAD_FOLDER'] = '/Users/muhammadabdullahakif/Documents/GitHub/Electricity-Load-Prediction/prediction_dataset'
-app.config['MODEL_PATH'] = '/Users/muhammadabdullahakif/Documents/GitHub/Electricity-Load-Prediction/model/model_state_dict.pt'
+app.config['MODEL_PATH'] = '/Users/muhammadabdullahakif/Documents/GitHub/Electricity-Load-Prediction/model/model.pt'
 app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024 * 1024  # 2GB
 
 # Store file paths for training and prediction datasets

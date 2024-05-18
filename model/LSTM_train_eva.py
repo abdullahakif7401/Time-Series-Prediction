@@ -30,6 +30,7 @@
 # In[21]:
 
 
+import os
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -230,11 +231,16 @@ class Data_util(object):
 
 # In[25]:
 
-
+def check_file_in_folder(folder_path):
+    for file in os.listdir(folder_path):
+        if file.endswith(".txt"):
+            return file
+    return False
 #python main.py --gpu 3 --horizon 24 --data data/electricity.txt --save save/elec.pt --output_fun Linear
 #args = parser.parse_args()
 #Data = Data_util(args.data, 0.6, 0.2, args.cuda, args.horizon, args.window, args.normalise);
-Data = Data_util('training_dataset/*.txt', 0.6, 0.2, False, 12, 24 * 7, 2);
+data_file_path = check_file_in_folder('training_dataset/')
+Data = Data_util('training_dataset/' + data_file_path, 0.6, 0.2, False, 12, 24 * 7, 2);
 
 
 # In[26]:
