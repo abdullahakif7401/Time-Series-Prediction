@@ -126,6 +126,16 @@
             max-width: 800px;
             margin: 20px auto;
         }
+        .info-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+        }
+        .info-icon {
+            width: 20px;
+            height: 20px;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -143,6 +153,9 @@
                     <label for="training-dataset-file">Choose File</label>
                     <input id="training-dataset-file" name="file" type="file" accept=".txt" />
                     <input type="submit" value="Upload File">
+                    <button type="button" class="info-button" onclick="showTrainingInfo()">
+                        <img src="static/Figure_1.png" alt="Info" class="info-icon">
+                    </button>
                 </div>
                 <span id="chosen-training-dataset-file" class="chosen-file">No file chosen</span>
             </form>
@@ -155,6 +168,9 @@
                     <label for="prediction-dataset-file">Choose File</label>
                     <input id="prediction-dataset-file" name="file" type="file" accept=".txt" />
                     <input type="submit" value="Upload File">
+                    <button type="button" class="info-button" onclick="showPredictionInfo()">
+                        <img src="static/Figure_1.png" alt="Info" class="info-icon">
+                    </button>
                 </div>
                 <span id="chosen-prediction-dataset-file" class="chosen-file">No file chosen</span>
             </form>
@@ -174,6 +190,14 @@
         <p>© 2024 Team MCS23 - Monash University Malaysia. All rights reserved.</p>
     </footer>
     <script>
+        function showTrainingInfo() {
+            alert("Training Dataset:\n1. .txt file\n2. Delimiter is ',', no missing data, has to be numerical data\n3. Each column separated by delimiter represents a feature, each row represents a timestamp");
+        }
+
+        function showPredictionInfo() {
+            alert("Prediction Dataset:\n1. .txt file\n2. Delimiter is ',', no missing data, has to be numerical data\n3. Each column separated by delimiter represents a feature, each row represents a timestamp");
+        }
+
         document.getElementById('training-dataset-file').addEventListener('change', function() {
             const fileName = this.files[0] ? this.files[0].name : 'No file chosen';
             document.getElementById('chosen-training-dataset-file').textContent = fileName;
@@ -187,6 +211,7 @@
         document.getElementById('training-dataset-form').addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);
+            document.getElementById('forecast-progress').textContent = ''; // Clear the forecast message
             fetch('/upload_training_dataset', {
                 method: 'POST',
                 body: formData,
@@ -207,6 +232,7 @@
         document.getElementById('prediction-dataset-form').addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);
+            document.getElementById('forecast-progress').textContent = ''; // Clear the forecast message
             fetch('/upload_prediction_dataset', {
                 method: 'POST',
                 body: formData,
