@@ -30,6 +30,8 @@
 # In[44]:
 
 
+import json
+import os
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -846,10 +848,10 @@ def model_pred(data,X,Y):
 
 # (Rest of your existing code...)
 
-def main(file_path):
+def main(file_path_traing, file_path_pred):
     # Initialize and configure the arguments
     args = argparse.Namespace()
-    args.data = file_path
+    args.data = file_path_traing
     args.window = 24 * 7
     args.hidRNN = 100
     args.hidCNN = 100
@@ -871,6 +873,12 @@ def main(file_path):
     args.epochs = 2
     args.save = 'model/model.pt'
     args.horizon = 24
+    args.pred_data = file_path_pred
+
+    # Ensure the predictions folder exists
+    predictions_folder = os.path.join(os.getcwd(), 'predictions_folder')
+    if not os.path.exists(predictions_folder):
+        os.makedirs(predictions_folder)
 
     Data = Data_util(args.data, 0.6, 0.2, args.cuda, args.horizon, args.window, 2)
 
@@ -889,6 +897,11 @@ def main(file_path):
 
     hidden_state, output = model_pred(Data, X, Y)
     output = output.cpu().numpy()
+
+    # Save the output predictions to a JSON file
+    predictions_file_path = os.path.join(predictions_folder, 'predictions.json')
+    with open(predictions_file_path, 'w') as f:
+        json.dump(output.tolist(), f)
 
     return output
 

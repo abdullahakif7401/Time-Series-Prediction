@@ -36,19 +36,25 @@
         }
         .section {
             margin-bottom: 20px;
-            padding: 10px;
+            padding: 20px;
             border: 1px solid #e1e1e1;
             border-radius: 8px;
+            background-color: #f9f9f9;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .section h2 {
+            margin-top: 0;
         }
         .table-container {
             max-height: 300px;
-            overflow-y: scroll;
+            overflow-y: auto;
             border: 1px solid #ccc;
             border-radius: 5px;
         }
         table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 10px;
         }
         th, td {
             border: 1px solid #dddddd;
@@ -76,8 +82,10 @@
         }
         .file-upload {
             display: flex;
+            justify-content: center;
             align-items: center;
             margin-top: 10px;
+            gap: 10px;
         }
         .file-upload input[type="file"] {
             display: none;
@@ -88,15 +96,38 @@
             padding: 8px 16px;
             border-radius: 4px;
             cursor: pointer;
-            margin-right: 10px;
         }
         .file-upload label:hover {
             background-color: #005792;
         }
         .chosen-file {
             font-style: italic;
+            margin-top: 10px;
+            display: block;
+        }
+        .file-upload input[type="submit"] {
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            background: #0077b6;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .file-upload input[type="submit"]:hover {
+            background-color: #005792;
+        }
+        .forecast-progress {
+            margin-top: 20px;
+            color: #0077b6;
+        }
+        .chart-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 20px auto;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <header>
@@ -104,32 +135,38 @@
     </header>
     <div class="container">
         <h1>Model Performance Dashboard</h1>
+
         <div class="section">
-            <h2>Upload Dataset</h2>
-            <form id="dataset-form" method="post" enctype="multipart/form-data">
+            <h2>Upload Training Dataset</h2>
+            <form id="training-dataset-form" method="post" enctype="multipart/form-data">
                 <div class="file-upload">
-                    <input id="dataset-file" name="file" type="file" accept=".txt" />
-                    <label for="dataset-file">Choose File</label>
-                    <input type="submit" value="Upload File" style="margin-top: 10px; padding: 8px 16px; border-radius: 4px; border: none; background: #0077b6; color: white; cursor: pointer;">
+                    <label for="training-dataset-file">Choose File</label>
+                    <input id="training-dataset-file" name="file" type="file" accept=".txt" />
+                    <input type="submit" value="Upload File">
                 </div>
-                <span id="chosen-dataset-file" class="chosen-file">No file chosen</span>
+                <span id="chosen-training-dataset-file" class="chosen-file">No file chosen</span>
             </form>
         </div>
-        <button class="nav-button" id="run-forecast-button">Run Forecast</button>
+
         <div class="section">
+            <h2>Upload Prediction Dataset</h2>
+            <form id="prediction-dataset-form" method="post" enctype="multipart/form-data">
+                <div class="file-upload">
+                    <label for="prediction-dataset-file">Choose File</label>
+                    <input id="prediction-dataset-file" name="file" type="file" accept=".txt" />
+                    <input type="submit" value="Upload File">
+                </div>
+                <span id="chosen-prediction-dataset-file" class="chosen-file">No file chosen</span>
+            </form>
+        </div>
+
+        <button class="nav-button" id="run-forecast-button">Run Forecast</button>
+        <div class="forecast-progress" id="forecast-progress"></div>
+
+        <div class="section" style="margin-top: 40px;">
             <h2>Prediction Results</h2>
-            <div class="table-container">
-                <table id="prediction-table" class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Original Data</th>
-                            <th>Prediction</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Prediction rows will be dynamically inserted here -->
-                    </tbody>
-                </table>
+            <div class="chart-container">
+                <canvas id="prediction-chart"></canvas>
             </div>
         </div>
     </div>
@@ -137,51 +174,112 @@
         <p>© 2024 Team MCS23 - Monash University Malaysia. All rights reserved.</p>
     </footer>
     <script>
-        document.getElementById('dataset-file').addEventListener('change', function() {
+        document.getElementById('training-dataset-file').addEventListener('change', function() {
             const fileName = this.files[0] ? this.files[0].name : 'No file chosen';
-            document.getElementById('chosen-dataset-file').textContent = fileName;
+            document.getElementById('chosen-training-dataset-file').textContent = fileName;
         });
 
-        document.getElementById('dataset-form').addEventListener('submit', function(e) {
+        document.getElementById('prediction-dataset-file').addEventListener('change', function() {
+            const fileName = this.files[0] ? this.files[0].name : 'No file chosen';
+            document.getElementById('chosen-prediction-dataset-file').textContent = fileName;
+        });
+
+        document.getElementById('training-dataset-form').addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);
-            fetch('/upload_dataset', {
+            fetch('/upload_training_dataset', {
                 method: 'POST',
                 body: formData,
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert('File uploaded successfully.');
+                    alert('Training dataset uploaded successfully.');
                 } else {
-                    alert('File upload failed: ' + (data.error || 'Unknown error.'));
+                    alert('Training dataset upload failed: ' + (data.error || 'Unknown error.'));
                 }
             })
             .catch(error => {
-                alert('File upload error: ' + error.message);
+                alert('Training dataset upload error: ' + error.message);
+            });
+        });
+
+        document.getElementById('prediction-dataset-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            fetch('/upload_prediction_dataset', {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Prediction dataset uploaded successfully.');
+                } else {
+                    alert('Prediction dataset upload failed: ' + (data.error || 'Unknown error.'));
+                }
+            })
+            .catch(error => {
+                alert('Prediction dataset upload error: ' + error.message);
             });
         });
 
         document.getElementById('run-forecast-button').addEventListener('click', function() {
+            const progressElement = document.getElementById('forecast-progress');
+            progressElement.textContent = 'Running forecast...';
+            
             fetch('/run_forecast')
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    const tbody = document.querySelector('#prediction-table tbody');
-                    tbody.innerHTML = '';
-                    data.predictions.forEach(prediction => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `<td>${prediction.original_data}</td><td>${prediction.prediction}</td>`;
-                        tbody.appendChild(row);
+                    progressElement.textContent = 'Forecast completed successfully.';
+                    fetch('/predictions')
+                    .then(response => response.json())
+                    .then(predictions => {
+                        displayChart(predictions);
                     });
                 } else {
-                    alert('Forecast failed: ' + (data.error || 'Unknown error.'));
+                    progressElement.textContent = 'Forecast failed: ' + (data.error || 'Unknown error.');
                 }
             })
             .catch(error => {
-                alert('Forecast error: ' + error.message);
+                progressElement.textContent = 'Forecast error: ' + error.message;
             });
         });
+
+        function displayChart(predictions) {
+            const ctx = document.getElementById('prediction-chart').getContext('2d');
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: predictions.map((_, index) => index + 1),
+                    datasets: [{
+                        label: 'Predictions',
+                        data: predictions.map(pred => pred[0]), // Adjust as necessary for your data
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        fill: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Value'
+                            }
+                        }
+                    }
+                }
+            });
+        }
     </script>
 </body>
 </html>
