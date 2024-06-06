@@ -1,58 +1,7 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[40]:
-
-
-# from google.colab import drive
-# drive.mount('/content/drive')
-
-
-# In[41]:
-
-
-# import os
-# os.chdir('/content/drive/MyDrive/FIT3162')
-
-
-# In[42]:
-
-
-# ls
-
-
-# In[43]:
-
-
-# Try on Proshphet model from facebook to train and predict
-
-
-# In[44]:
-
-
 import json
 import os
 import matplotlib.pyplot as plt
 import numpy as np
-
-# In[45]:
-
-
-# pip install pyts
-
-
-# In[46]:
-
-
-# pip install torch numpy pandas scikit-learn mlxtend pyts
-
-
-# 
-
-# In[47]:
-
-
-# Preprocess the dataset
 
 # Preprocess the data
 import torch
@@ -118,25 +67,32 @@ class Data_util(object):
         # calculates the relative absolute error (RAE) of the model output tmp
         self.rae = torch.mean(torch.abs(tmp - torch.mean(tmp)))
 
+    # Function to apply association rule mining on data
     def _arm(self, n_bins, min_support, min_threshold, n_rules):
         data = self.rawdat
         df = pd.DataFrame(data)
+        # Normalize data
         scaler = MinMaxScaler()
         norm_data = scaler.fit_transform(df)
+        # Apply Symbolic Aggregate Approximation to discretize data
         sax = SymbolicAggregateApproximation(n_bins=n_bins, strategy='uniform')
         sax_df = pd.DataFrame(sax.fit_transform(norm_data))
         binary_sax_df = pd.get_dummies(sax_df)
+        # Get frequent itemsets using Apriori algorithm
         frequent_itemsets = apriori(binary_sax_df, min_support=min_support, use_colnames=True)
         if len(frequent_itemsets) == 0:
             self.cols = list(range(df.shape[1]))
             return
+        # Obtain association rules from frequent itemsets
         rules = association_rules(frequent_itemsets, metric='confidence', min_threshold=min_threshold)
         rules = rules.sort_values(by=['zhangs_metric'], ascending=False).iloc[:n_rules, :]
+        # Find most important features
         unique_items = set()
         for index, row in rules.iterrows():
             unique_items.update([int(item[:-2]) for item in row['antecedents']])
             unique_items.update([int(item[:-2]) for item in row['consequents']])
         self.cols = list(unique_items)
+        # Feature extraction
         df = df.iloc[:, self.cols]
         self.rawdat = df.values
 
@@ -167,7 +123,6 @@ class Data_util(object):
         self.valid = self._batchify(valid_set, self.ntp);
         self.test = self._batchify(test_set, self.ntp);
 
-    # self.train = self._batchify(train_set, self.ntp);
     def _batchify(self, idx_set, ntp):  # horizon for next prediciton
         # number of samples in one batch
         # index set for dataset (train_set if train_set passed)
@@ -186,10 +141,6 @@ class Data_util(object):
             # by slicing each sample/entry/row into X
             # between start and end to be the training dataset
 
-            # create a PyTorch tensor 'X' with 5 batches, each containing a slice of 20 rows from 'data'
-            # X = torch.empty(5, 20, 10)  # Pre-initialize X with the desired shape
-            # X will contain 5 separate slices from data
-
             # slice the many rows of data except for
             X[i, :, :] = torch.from_numpy(self.dat[start:end, :])
             # for batching multiple rows of data together to train from start to end
@@ -203,9 +154,6 @@ class Data_util(object):
             # The result is that Y[i,:] will be a 1D tensor with the same number of elements as there are columns in self.dat.
 
         return [X, Y]
-
-        # train_loss = train(Data, x, y, model, criterion, optim, args.batch_size)
-        # data.get_batches(X,Y, batch_size, True):
 
     def get_batches(self, inputs, targets, batch_size, shuffle=True):
         # get_batches used in training loop to iterate over the generator to ge the batche of data
@@ -231,16 +179,6 @@ class Data_util(object):
                 # Data.train[1] = Variable(X)
             yield Variable(X), Variable(Y)
             start_idx += batch_size
-
-
-# In[48]:
-
-
-# python main.py --gpu 3 --horizon 24 --data data/electricity.txt --save save/elec.pt --output_fun Linear
-# args = parser.parse_args()
-# Data = Data_util(args.data, 0.6, 0.2, args.cuda, args.horizon, args.window, args.normalise);
-
-# In[49]:
 
 
 def evaluate(data, X, Y, model, evaluateL2, evaluateL1, batch_size):
@@ -295,10 +233,6 @@ def evaluate(data, X, Y, model, evaluateL2, evaluateL1, batch_size):
     sd_p = predict.std(axis=0)
     sd_g = Ytest.std(axis=0)
     # calculate the mean for each column (across the rows)
-    # Ytest = np.array([[1, 4],
-    # [2, 5],
-    # [3, 6]])
-    # print(mean_g)  # Output: [2. 5.]
     mean_p = predict.mean(axis=0)
     mean_g = Ytest.mean(axis=0)
     # True if the corresponding element in sigma_g is not equal to zero.
@@ -314,16 +248,10 @@ def evaluate(data, X, Y, model, evaluateL2, evaluateL1, batch_size):
     return rse, rae, correlation
 
 
-# In[50]:
-
-
 import argparse
 
 # argparse to parse the input argument which take a path
 parser = argparse.ArgumentParser(description='Pytorch Time series forecasting')
-# parser.add_argument('--data', type = str, required=True, help='location of the data file')
-# parser.add_argument('--ntp', type=int, default=12)
-# args = parser.parse_args()
 
 
 import torch
@@ -345,15 +273,10 @@ class Gate(nn.Module):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         x_t = x_t.to(device)
         h_prev = h_prev.to(device)
-        # print(x_t.shape)
         # Transform x_t to the correct size using the bottleneck layer
         x_t_transformed = self.bottleneck(x_t)
-        # print(x_t_transformed.shape)
         # Concatenate transformed input and previous hidden state along the feature dimension
         concat = torch.cat((x_t_transformed.t(), h_prev), dim=1)
-        # print(concat.shape)
-        # Compute the gate's output
-        # torch.matmul = dot product
 
         z = torch.matmul(concat, self.W) + self.b
         gate_output = torch.sigmoid(z)
@@ -496,10 +419,8 @@ def train(data, X, Y, model, criterion, optim, batch_size):
         # wise multiplication or addition.
         data.scale = data.scale
         scale = data.scale.expand(output.shape[0], data.m)
-        # print(scale.shape)
         # criterion: loss function measure difference between the predicted outputs and the true values.
         Y = Y
-        # print(output.shape)
         loss = criterion(output * scale, Y * scale)
         loss.backward()
         # gradient clipping to prevent gradient explosion or diminishing
@@ -553,7 +474,7 @@ class Optim(object):
         # computer gradients norm
         grad_norm = 0
         for param in self.params:
-            # etrieves the gradient data for a parameter of the neural network
+            # retrieves the gradient data for a parameter of the neural network
             # norm() squares the L2 norm (Euclidean norm) of the gradient tensor.
             grad_norm += math.pow(param.grad.data.norm(), 2)  # since 2
             # accumulates the sum of the squared norms of all parameters’ gradients.
@@ -596,17 +517,6 @@ class Optim(object):
         self.last_ppl = ppl
 
         self._makeOptimizer()
-
-
-# model = Model(args,Data)
-# optim = Optim(
-#     model.parameters(), args.optim, args.lr, args.clip,
-# )
-
-
-# optim = Optim(
-#     model.parameters(), args.optim, args.lr, args.clip,
-# )
 
 
 def train_and_evaluate(model, data, args, train_func, evaluate_func):
@@ -666,14 +576,12 @@ def train_and_evaluate(model, data, args, train_func, evaluate_func):
                 if len(x) < args.batch_size:
                     # overlapping batch_size, sequence length, feature_size/sensor num
 
-                    # print(input_sequence.size(0)) [128, 168, 321]
 
                     padding_size = args.batch_size - len(x)
                     # Create a tensor of zeros for padding
 
                     x_padding = torch.zeros(padding_size, x.size(1), x.size(2)).to(device)
                     y_padding = torch.zeros(padding_size, x.size(2)).to(device)
-                    # print(padding.size())
                     # Concatenate the padding to the x
                     x = torch.cat((x, x_padding), dim=0)
                     # Concatenate the padding to the x
@@ -694,7 +602,6 @@ def train_and_evaluate(model, data, args, train_func, evaluate_func):
                         val_padding_size = args.batch_size - len(x_val)
                         xval_padding = torch.zeros(val_padding_size, x_val.size(1), x_val.size(2)).to(device)
                         yval_padding = torch.zeros(val_padding_size, x_val.size(2)).to(device)
-                        # print(padding.size())
                         # Concatenate the padding to the x
                         x_val = torch.cat((x_val, xval_padding), dim=0)
                         # Concatenate the padding to the x
@@ -717,23 +624,10 @@ def train_and_evaluate(model, data, args, train_func, evaluate_func):
                     with open(args.save, 'wb') as f:
                         torch.save(model, f)
                     best_val = val_loss.item()
-            # if epoch % 5 == 0:
-            #   #torch.device('cuda:0') for the first GPU or torch.device('cpu') for the CPU1.
-            #   #then .to(device) would go to either CPU or GPU
-            #   #.cude(1) go to first GPU
-            #   # model.to('cuda')
-            #   test_acc, test_rae, test_corr  = evaluate(Data, x_test, y_test, model, evaluateL2, evaluateL1, args.batch_size);
-            #   print ("test rse {:5.4f} | test rae {:5.4f} | test corr {:5.4f}".format(test_acc, test_rae, test_corr))
 
     except KeyboardInterrupt:
         print('-' * 89)
         print('Exiting from training early')
-
-    # test_acc, test_rae, test_corr  = evaluate(Data, x_test, y_test, model, evaluateL2, evaluateL1, args.batch_size);
-    # print ("test rse {:5.4f} | test rae {:5.4f} | test corr {:5.4f}".format(test_acc, test_rae, test_corr))
-
-
-# train_and_evaluate(model, Data, args, train, evaluate)
 
 
 class PredData_util:
@@ -800,11 +694,6 @@ def model_pred(model, args, data, X, Y):
         print(ex)
 
 
-# !/usr/bin/env python
-# coding: utf-8
-
-# (Rest of your existing code...)
-
 def main(file_path_traing, file_path_pred):
     # Initialize and configure the arguments
     args = argparse.Namespace()
@@ -865,25 +754,4 @@ def main(file_path_traing, file_path_pred):
 
 if __name__ == "__main__":
     import sys
-
     main(sys.argv[1])
-
-# # In[58]:
-
-
-# # Load the best saved model.
-# #output = None
-# with open(args.save, 'rb') as f:
-#   model = torch.load(f)
-#   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-#   X = Data.test[0].to(device)
-#   Y = Data.test[1].to(device)
-
-#   hidden_state, output = model_pred(Data,X,Y)
-#   output = output.cpu()
-#   output = output.numpy()
-#   print(output)
-
-#   for i in range(len(output)):
-#     for j in range(len(output[0])):
-#       print(output[0][j])
